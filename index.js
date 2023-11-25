@@ -136,11 +136,40 @@ async function run() {
       const result = await petCollection.find().toArray();
       res.send(result);
     });
+    app.get("/pets/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petCollection.findOne(query);
+      res.send(result);
+    });
     app.post("/pets", verifyToken, async (req, res) => {
       const pet = req.body;
       const result = await petCollection.insertOne(pet);
       res.send(result);
     });
+
+    app.patch("/pets/:id", async (req, res) => {
+      const info = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          name: info.name,
+          age: info.age,
+          location: info.location,
+          note: info.note,
+          description: info.description,
+          image: info.image,
+          petOwner: info.petOwner,
+          adopted: info.adopted,
+          date: info.date,
+          category: info.category,
+        },
+      };
+      const result = await petCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
     app.delete("/pets/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
