@@ -141,6 +141,12 @@ async function run() {
       const result = await petCollection.insertOne(pet);
       res.send(result);
     });
+    app.delete("/pets/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petCollection.deleteOne(query);
+      res.send(result);
+    });
 
     app.get("/categories", async (req, res) => {
       const result = await categoriesCollection.find().toArray();
