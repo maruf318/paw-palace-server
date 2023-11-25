@@ -31,6 +31,7 @@ async function run() {
       .db("pawPalaceDB")
       .collection("categories");
     const userCollection = client.db("pawPalaceDB").collection("users");
+    const petCollection = client.db("pawPalaceDB").collection("pets");
 
     //jwt related api
 
@@ -44,7 +45,7 @@ async function run() {
 
     //middlewares
     const verifyToken = (req, res, next) => {
-      console.log("inside verify token middleware", req.headers.authorization);
+      // console.log("inside verify token middleware", req.headers.authorization);
       if (!req.headers.authorization) {
         // TODO: remove
         return res.status(401).send({ message: "unauthorized access49" });
@@ -130,10 +131,16 @@ async function run() {
       const result = await userCollection.deleteOne(query);
       res.send(result);
     });
-    // app.delete('/users/:id',async(req,res)=>{
-    //   const id=req.params.id;
-    //   const query={_id: new}
-    // })
+    //pets adoption related api
+    app.get("/pets", verifyToken, async (req, res) => {
+      const result = await petCollection.find().toArray();
+      res.send(result);
+    });
+    app.post("/pets", verifyToken, async (req, res) => {
+      const pet = req.body;
+      const result = await petCollection.insertOne(pet);
+      res.send(result);
+    });
 
     app.get("/categories", async (req, res) => {
       const result = await categoriesCollection.find().toArray();
