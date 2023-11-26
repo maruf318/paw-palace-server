@@ -133,7 +133,16 @@ async function run() {
     });
     //pets adoption related api
     app.get("/pets", verifyToken, async (req, res) => {
-      const result = await petCollection.find().toArray();
+      // console.log(req.query.email);
+      // console.log("token info of owner", req.user);
+      // if (req.decoded.email !== req.query.email) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+      let query = {};
+      if (req.query?.email) {
+        query = { petOwner: req.query.email };
+      }
+      const result = await petCollection.find(query).toArray();
       res.send(result);
     });
     app.get("/pets/:id", async (req, res) => {
@@ -142,6 +151,12 @@ async function run() {
       const result = await petCollection.findOne(query);
       res.send(result);
     });
+    app.get("/allPets", async (req, res) => {
+      const query = { adopted: false };
+      const result = await petCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.post("/pets", verifyToken, async (req, res) => {
       const pet = req.body;
       const result = await petCollection.insertOne(pet);
@@ -167,6 +182,19 @@ async function run() {
         },
       };
       const result = await petCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    app.patch("/pet/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      // const { adopted } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          adopted: true,
+        },
+      };
+      const result = await petCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
