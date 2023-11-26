@@ -32,6 +32,7 @@ async function run() {
       .collection("categories");
     const userCollection = client.db("pawPalaceDB").collection("users");
     const petCollection = client.db("pawPalaceDB").collection("pets");
+    const donationCollection = client.db("pawPalaceDB").collection("donations");
     const reqOfPetCollection = client
       .db("pawPalaceDB")
       .collection("requestOfPets");
@@ -237,6 +238,12 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await reqOfPetCollection.deleteOne(query);
+      res.send(result);
+    });
+    //donation related api
+    app.post("/donations", verifyToken, async (req, res) => {
+      const donation = req.body;
+      const result = await donationCollection.insertOne(donation);
       res.send(result);
     });
 
