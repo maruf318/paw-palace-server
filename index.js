@@ -32,6 +32,9 @@ async function run() {
       .collection("categories");
     const userCollection = client.db("pawPalaceDB").collection("users");
     const petCollection = client.db("pawPalaceDB").collection("pets");
+    const reqOfPetCollection = client
+      .db("pawPalaceDB")
+      .collection("requestOfPets");
 
     //jwt related api
 
@@ -152,8 +155,19 @@ async function run() {
       res.send(result);
     });
     app.get("/allPets", async (req, res) => {
-      const query = { adopted: false };
-      const result = await petCollection.find(query).toArray();
+      const filter = req.query;
+      const query = {
+        adopted: false,
+        name: { $regex: filter.search, $options: "i" },
+        category: { $regex: filter.category },
+      };
+      // const options = {
+      //   name: { $regex: filter.search },
+      // };
+      const result = await petCollection
+        .find(query)
+        .sort({ date: -1 })
+        .toArray();
       res.send(result);
     });
 
@@ -204,9 +218,37 @@ async function run() {
       const result = await petCollection.deleteOne(query);
       res.send(result);
     });
+    //request pet for adoption api
+    app.post("/request/pets", verifyToken, async (req, res) => {
+      const pet = req.body;
+      const result = await reqOfPetCollection.insertOne(pet);
+      res.send(result);
+    });
 
+    app.get("/request/pets", verifyToken, async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { petOwner: req.query.email };
+      }
+      const result = await reqOfPetCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.delete("/request/pets/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reqOfPetCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // to show all the categories in homepage api
     app.get("/categories", async (req, res) => {
       const result = await categoriesCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/category/:name", async (req, res) => {
+      const name = req.params.name;
+      const query = { category: name };
+      const result = await petCollection.find(query).toArray();
       res.send(result);
     });
 
