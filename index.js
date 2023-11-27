@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 var jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 
@@ -33,6 +34,7 @@ async function run() {
     const userCollection = client.db("pawPalaceDB").collection("users");
     const petCollection = client.db("pawPalaceDB").collection("pets");
     const donationCollection = client.db("pawPalaceDB").collection("donations");
+    const paymentCollection = client.db("pawPalaceDB").collection("payments");
     const reqOfPetCollection = client
       .db("pawPalaceDB")
       .collection("requestOfPets");
@@ -241,8 +243,16 @@ async function run() {
       res.send(result);
     });
     //donation related api
-    app.get("/donations", verifyToken, async (req, res) => {
-      const result = await donationCollection.find().toArray();
+    app.get("/donations", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { donationOwner: req.query.email };
+      }
+      // const result = await petCollection.find(query).toArray();
+      const result = await donationCollection
+        .find(query)
+        .sort({ date: -1 })
+        .toArray();
       res.send(result);
     });
     app.get("/donations/:id", async (req, res) => {
@@ -285,10 +295,29 @@ async function run() {
       const result = await donationCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+    app.patch("/afterDonate/:id", async (req, res) => {
+      const id = req.params.id;
+      const { donatedAmount } = req.body;
+      console.log(id, donatedAmount);
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          donatedAmount: donatedAmount,
+        },
+      };
+      const result = await donationCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     app.post("/donations", verifyToken, async (req, res) => {
       const donation = req.body;
       const result = await donationCollection.insertOne(donation);
+      res.send(result);
+    });
+    app.delete("/donation/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationCollection.deleteOne(query);
       res.send(result);
     });
 
@@ -302,6 +331,27 @@ async function run() {
       const query = { category: name };
       const result = await petCollection.find(query).toArray();
       res.send(result);
+    });
+    //payment
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+      res.send(paymentResult);
+    });
+    //payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log("amount inside intent", amount);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "eur",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     console.log(
