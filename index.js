@@ -241,6 +241,38 @@ async function run() {
       res.send(result);
     });
     //donation related api
+    app.get("/donations", verifyToken, async (req, res) => {
+      const result = await donationCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/donations/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationCollection.findOne(query);
+      res.send(result);
+    });
+    app.patch("/donations/:id", async (req, res) => {
+      const info = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          shortDescription: info.shortDescription,
+          description: info.description,
+          maxAmount: info.maxAmount,
+          expireDate: info.expireDate,
+          image: info.image,
+          donationOwner: info.donationOwner,
+          active: info.active,
+          date: info.date,
+          donationName: info.donationName,
+          donatedAmount: info.donatedAmount,
+        },
+      };
+      const result = await donationCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
     app.post("/donations", verifyToken, async (req, res) => {
       const donation = req.body;
       const result = await donationCollection.insertOne(donation);
