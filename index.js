@@ -272,6 +272,19 @@ async function run() {
       const result = await donationCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+    app.patch("/donation/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const { active } = req.body;
+      // console.log(id, active);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          active: active,
+        },
+      };
+      const result = await donationCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     app.post("/donations", verifyToken, async (req, res) => {
       const donation = req.body;
