@@ -333,10 +333,44 @@ async function run() {
       res.send(result);
     });
     //payment
+    app.get("/payments", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { paymentUser: req.query.email };
+      }
+
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
     app.post("/payments", async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
       res.send(paymentResult);
+    });
+    app.delete("/payments/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await paymentCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //refund
+    app.patch("/refund/:id", async (req, res) => {
+      const id = req.params.id;
+      const { refundAmount } = req.body; //10
+      const query = { _id: new ObjectId(id) };
+      //
+      const existingDonation = await donationCollection.findOne(query);
+      if (!existingDonation) {
+        return res.status(404).json({ error: "Donation not found" });
+      }
+      const newDonatedAmount = existingDonation.donatedAmount - refundAmount;
+
+      console.log(id, refundAmount, newDonatedAmount);
+      const result = await donationCollection.updateOne(query, {
+        $set: { donatedAmount: newDonatedAmount },
+      });
+      res.send(result);
     });
     //payment intent
     app.post("/create-payment-intent", async (req, res) => {
