@@ -164,9 +164,6 @@ async function run() {
         name: { $regex: filter.search, $options: "i" },
         category: { $regex: filter.category },
       };
-      // const options = {
-      //   name: { $regex: filter.search },
-      // };
       const result = await petCollection
         .find(query)
         .sort({ date: -1 })
@@ -253,6 +250,13 @@ async function run() {
         .find(query)
         .sort({ date: -1 })
         .toArray();
+      res.send(result);
+    });
+    app.get("/activeDonations", async (req, res) => {
+      const query = {
+        active: true,
+      };
+      const result = await donationCollection.find(query).toArray();
       res.send(result);
     });
     app.get("/donations/:id", async (req, res) => {
@@ -342,6 +346,13 @@ async function run() {
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
+    app.get("/viewPayments/:id", async (req, res) => {
+      const donationId = req.params.id;
+      console.log(donationId);
+      const query = { donationId: donationId };
+      const result = await paymentCollection.findOne(query);
+      res.send([result]);
+    });
     app.post("/payments", async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
@@ -366,7 +377,7 @@ async function run() {
       }
       const newDonatedAmount = existingDonation.donatedAmount - refundAmount;
 
-      console.log(id, refundAmount, newDonatedAmount);
+      // console.log(id, refundAmount, newDonatedAmount);
       const result = await donationCollection.updateOne(query, {
         $set: { donatedAmount: newDonatedAmount },
       });
@@ -376,7 +387,7 @@ async function run() {
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
-      console.log("amount inside intent", amount);
+      // console.log("amount inside intent", amount);
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
